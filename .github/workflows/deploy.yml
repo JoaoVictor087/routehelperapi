@@ -26,22 +26,21 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
-      # 4. Build
+      # 4. Build - Gera o app.jar dentro da pasta target
       - name: Build with Maven
         run: ./mvnw clean package -DskipTests
 
-      # 5. Copy (SIMPLIFICADO)
-      # Copia o app.jar diretamente da pasta target do robô para o servidor
-      - name: Copy JAR to VM
+      # 5. Copy - Copia a pasta target inteira para o servidor
+      - name: Copy build artifacts to VM
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AZURE_VM_IP }}
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "target/app.jar" # <-- MUDANÇA PRINCIPAL
+          source: "target" # Copia a pasta target inteira
           target: "/opt/routehelper-api/"
 
-      # 6. Restart
+      # 6. Restart - Adaptado para rodar de dentro da pasta target
       - name: Restart API Service on VM
         uses: appleboy/ssh-action@master
         with:
@@ -49,13 +48,17 @@ jobs:
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            PID=$(ps -ef | grep '/opt/routehelper-api/app.jar' | grep -v grep | awk '{print $2}')
+            # Procura pelo processo Java rodando DE DENTRO da pasta target
+            PID=$(ps -ef | grep '/opt/routehelper-api/target/app.jar' | grep -v grep | awk '{print $2}')
+            
             if [ -n "$PID" ]; then
               echo "Stopping old API process with PID: $PID"
               sudo kill $PID
               sleep 5
             fi
             
-            echo "Starting new API process with app.jar"
-            cd /opt/routehelper-api/
+            echo "Starting new API process from within the target directory"
+            # Navega para DENTRO da pasta target
+            cd /opt/routehelper-api/target/
+            # Inicia a API a partir daqui
             nohup java -jar app.jar &
