@@ -1,55 +1,47 @@
-# Nome do workflow que aparecerá na aba "Actions" do GitHub
+# Nome do workflow
 name: Deploy API to Azure VM
 
-# Gatilho: Define quando o workflow deve rodar (a cada push na branch "main")
+# Gatilho
 on:
   push:
     branches: [ "main" ]
 
-# Define as tarefas a serem executadas
 jobs:
   build-and-deploy:
-    # A máquina temporária do GitHub Actions (o "robô") usará Ubuntu
     runs-on: ubuntu-latest
 
-    # Define a sequência de passos
     steps:
-      # 1. Baixa o seu código do repositório para a máquina do robô
+      # 1. Checkout
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Configura o ambiente Java (JDK 25) na máquina do robô
+      # 2. Set up JDK
       - name: Set up JDK 25
         uses: actions/setup-java@v4
         with:
           java-version: '25'
           distribution: 'temurin'
 
-      # 3. Dá permissão de execução para o Maven Wrapper
+      # 3. Make mvnw executable
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
-      # 4. Compila o projeto e gera o arquivo "app.jar" (graças ao <finalName> no pom.xml)
+      # 4. Build
       - name: Build with Maven
         run: ./mvnw clean package -DskipTests
 
-      # 5. Cria uma pasta de "preparação" (staging) e copia APENAS o app.jar para ela
-      - name: Create Staging Directory for Deploy
-        run: |
-          mkdir staging
-          cp target/app.jar staging/
-
-      # 6. Copia o conteúdo da pasta "staging" (apenas o app.jar) para a VM na Azure
+      # 5. Copy (SIMPLIFICADO)
+      # Copia o app.jar diretamente da pasta target do robô para o servidor
       - name: Copy JAR to VM
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.AZURE_VM_IP }}
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "staging/*" # Copia tudo de dentro da pasta staging
+          source: "target/app.jar" # <-- MUDANÇA PRINCIPAL
           target: "/opt/routehelper-api/"
 
-      # 7. Conecta na VM via SSH e reinicia a API
+      # 6. Restart
       - name: Restart API Service on VM
         uses: appleboy/ssh-action@master
         with:
@@ -57,20 +49,13 @@ jobs:
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            # O script a seguir será executado dentro da sua VM
-            
-            # Procura pelo PID (Process ID) do processo java rodando "app.jar"
             PID=$(ps -ef | grep '/opt/routehelper-api/app.jar' | grep -v grep | awk '{print $2}')
-            
-            # Se um PID for encontrado, o processo antigo é encerrado
             if [ -n "$PID" ]; then
               echo "Stopping old API process with PID: $PID"
               sudo kill $PID
-              sleep 5 # Espera 5 segundos para garantir que a porta foi liberada
+              sleep 5
             fi
             
             echo "Starting new API process with app.jar"
-            # Navega para a pasta da API
             cd /opt/routehelper-api/
-            # Inicia a nova versão da API em background, como o usuário atual (não root)
             nohup java -jar app.jar &
