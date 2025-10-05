@@ -47,18 +47,18 @@ jobs:
       - name: Restart API Service on VM
         uses: appleboy/ssh-action@master
         with:
-            host: ${{ secrets.AZURE_VM_IP }}       # <-- ADICIONAR
-            username: ${{ secrets.AZURE_VM_USER }} # <-- ADICIONAR
-            key: ${{ secrets.SSH_PRIVATE_KEY }}    # <-- ADICIONAR
-            script: |
-            # Procura por qualquer processo .jar rodando na pasta da nossa api
-                PID=$(ps -ef | grep '/opt/routehelper-api/.*\.jar' | grep -v grep | awk '{print $2}')
-                if [ -n "$PID" ]; then
-                  sudo kill $PID
-                  sleep 5
-                fi
+          host: ${{ secrets.AZURE_VM_IP }}       # <-- ADICIONAR
+          username: ${{ secrets.AZURE_VM_USER }} # <-- ADICIONAR
+          key: ${{ secrets.SSH_PRIVATE_KEY }}    # <-- ADICIONAR
+          script: |
+          # Procura por qualquer processo .jar rodando na pasta da nossa api
+            PID=$(ps -ef | grep '/opt/routehelper-api/.*\.jar' | grep -v grep | awk '{print $2}')
+              if [ -n "$PID" ]; then
+                sudo kill $PID
+                sleep 5
+              fi
   
-                echo "Starting new API process with app.jar"
-                cd /opt/routehelper-api/
-                # O scp já terá substituído o app.jar antigo pelo novo.
-                sudo nohup java -jar app.jar &
+              echo "Starting new API process with app.jar"
+              cd /opt/routehelper-api/
+              # O scp já terá substituído o app.jar antigo pelo novo.
+              sudo nohup java -jar app.jar &
