@@ -61,4 +61,4 @@ jobs:
             # Navega para DENTRO da pasta target
             cd /opt/routehelper-api/target/
             # Inicia a API a partir daqui
-            nohup java -jar app.jar &
+            nohup java -jar app.jar > /dev/null 2>&1 &
