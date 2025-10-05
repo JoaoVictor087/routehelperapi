@@ -40,29 +40,24 @@ jobs:
           host: ${{ secrets.AZURE_VM_IP }}
           username: ${{ secrets.AZURE_VM_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "target/*.jar"
+          source: "target/app.jar"
           target: "/opt/routehelper-api/" # Ajuste se o nome da sua pasta for diferente
 
       # Passo 5: Conecta na VM via SSH e reinicia a API
       - name: Restart API Service on VM
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.AZURE_VM_IP }}
-          username: ${{ secrets.AZURE_VM_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # ...
           script: |
-            # Encontra o PID do processo Java antigo que está rodando
-            PID=$(ps -ef | grep 'java -jar routehelper-api' | grep -v grep | awk '{print $2}')
-            
-            # Se o processo existir, ele o encerra
+            # Procura por qualquer processo .jar rodando na pasta da nossa api
+            PID=$(ps -ef | grep '/opt/routehelper-api/.*\.jar' | grep -v grep | awk '{print $2}')
             if [ -n "$PID" ]; then
-              echo "Stopping existing API process with PID: $PID"
+              echo "Stopping old API process with PID: $PID"
               sudo kill $PID
-              sleep 5 # Dá um tempo para o processo morrer
+              sleep 5
             fi
-            
-            # Navega para a pasta da API e inicia a nova versão em background
-            echo "Starting new API process"
-            cd /opt/routehelper-api/target
-            # O sudo é importante aqui caso a porta 8080 seja privilegiada ou para consistência
-            sudo nohup java -jar *.jar > /dev/null 2>&1 &
+
+            echo "Starting new API process with app.jar"
+            cd /opt/routehelper-api/
+            # O scp já terá substituído o app.jar antigo pelo novo.
+            sudo nohup java -jar app.jar &
