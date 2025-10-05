@@ -25,6 +25,9 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
 
+      - name: Make mvnw executable
+        run: chmod +x ./mvnw
+
       # Passo 3: Roda o comando de build do Maven para gerar o arquivo .jar
       - name: Build with Maven
         # O -DskipTests pula os testes para acelerar o deploy
