@@ -8,10 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/health")
 public class HealthController {
 
-    @GetMapping
+    @GetMapping("/health")
     public ResponseEntity<Map<String, String>> getHealthStatus() {
         Map<String, String> status = Map.of(
                 "status", "UP",
