@@ -54,7 +54,6 @@ jobs:
             # Procura por qualquer processo .jar rodando na pasta da nossa api
                 PID=$(ps -ef | grep '/opt/routehelper-api/.*\.jar' | grep -v grep | awk '{print $2}')
                 if [ -n "$PID" ]; then
-                  echo "Stopping old API process with PID: $PID"
                   sudo kill $PID
                   sleep 5
                 fi
