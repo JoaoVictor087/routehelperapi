@@ -65,4 +65,4 @@ jobs:
             echo "Starting new API process"
             cd /opt/routehelper-api/
             # O sudo é importante aqui caso a porta 8080 seja privilegiada ou para consistência
-            sudo nohup java -jar *.jar &
+            sudo nohup java -jar *.jar > /dev/null 2>&1 &
